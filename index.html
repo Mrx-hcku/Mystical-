@@ -3,108 +3,156 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pagalworld Music Search</title>
+<title>Music Player - JioSaavn API</title>
 <style>
   body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, sans-serif;
     background: #121212;
     color: #fff;
-    text-align: center;
   }
-  h1 {
+  header {
+    background: #1db954;
+    padding: 15px;
+    text-align: center;
     font-size: 24px;
-    margin: 20px 0;
+    font-weight: bold;
   }
   .search-box {
     display: flex;
     justify-content: center;
-    margin: 10px;
+    padding: 15px;
     gap: 10px;
+    background: #181818;
   }
   .search-box input {
     padding: 12px;
     width: 65%;
     border: none;
-    border-radius: 6px;
+    border-radius: 30px;
     font-size: 16px;
+    outline: none;
   }
   .search-box button {
     padding: 12px 18px;
-    background: #ff4757;
+    background: #1db954;
     color: #fff;
     border: none;
-    border-radius: 6px;
+    border-radius: 30px;
     font-size: 16px;
     cursor: pointer;
+    font-weight: bold;
   }
-  .results {
+  h2 {
+    margin: 20px;
+    font-size: 22px;
+  }
+  .results, .trending {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 15px;
-    margin-top: 20px;
     padding: 10px;
   }
   .song-card {
-    background: #1e1e1e;
+    background: #181818;
     padding: 15px;
     border-radius: 10px;
+    width: 180px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 15px;
+    transition: transform 0.2s ease;
+  }
+  .song-card:hover {
+    transform: scale(1.05);
+    background: #222;
   }
   .song-card img {
-    width: 70px;
-    height: 70px;
-    border-radius: 10px;
+    width: 150px;
+    height: 150px;
+    border-radius: 8px;
     object-fit: cover;
+    margin-bottom: 10px;
   }
   .song-info {
-    flex: 1;
-    text-align: left;
+    text-align: center;
   }
   .song-info h3 {
-    margin: 0;
-    font-size: 18px;
+    margin: 5px 0;
+    font-size: 16px;
   }
   .song-info p {
-    margin: 5px 0 0;
+    margin: 0;
     font-size: 14px;
-    color: #ccc;
+    color: #bbb;
   }
   .actions {
     display: flex;
-    flex-direction: column;
     gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .actions button {
-    padding: 8px 10px;
-    background: #ff4757;
+    padding: 6px 12px;
+    background: #1db954;
     color: #fff;
     border: none;
-    border-radius: 6px;
+    border-radius: 20px;
     font-size: 14px;
     cursor: pointer;
   }
-  audio {
-    width: 90%;
-    margin-top: 15px;
-    outline: none;
+  #audioPlayer {
+    width: 100%;
+    margin-top: 20px;
+    background: #181818;
+  }
+  .lyrics-box {
+    background: #222;
+    padding: 15px;
+    margin: 20px;
+    border-radius: 8px;
+    text-align: left;
+    display: none;
+    max-height: 200px;
+    overflow-y: auto;
   }
 </style>
 </head>
 <body>
-  <h1>Pagalworld Music Search</h1>
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Search for songs...">
-    <button onclick="searchSongs()">Search</button>
-  </div>
-  <div id="results" class="results"></div>
-  <audio id="audioPlayer" controls></audio>
+<header>🎵 Music Player</header>
+<div class="search-box">
+  <input type="text" id="searchInput" placeholder="Search for songs...">
+  <button onclick="searchSongs()">Search</button>
+</div>
+
+<h2>🔥 Trending Songs</h2>
+<div id="trending" class="trending"></div>
+
+<h2>Search Results</h2>
+<div id="results" class="results"></div>
+
+<audio id="audioPlayer" controls></audio>
+<div id="lyricsBox" class="lyrics-box"></div>
 
 <script>
-const proxy = "https://cors-anywhere.herokuapp.com/";
-const baseURL = "https://pagal-music-api.vercel.app";
+const searchAPI = "https://saavn.me/search/songs?query=";
+const trendingAPI = "https://saavn.me/modules?language=hindi"; // trending module
+
+const audioPlayer = document.getElementById('audioPlayer');
+const lyricsBox = document.getElementById('lyricsBox');
+
+async function loadTrending() {
+  try {
+    const res = await fetch(trendingAPI);
+    const data = await res.json();
+    const trendingSongs = data.data.modules[0].data; 
+    displaySongs(trendingSongs, 'trending');
+  } catch (error) {
+    console.error('Error loading trending:', error);
+  }
+}
 
 async function searchSongs() {
   const query = document.getElementById('searchInput').value.trim();
@@ -114,42 +162,75 @@ async function searchSongs() {
   }
   document.getElementById('results').innerHTML = '<p>Loading...</p>';
   try {
-    const res = await fetch(proxy + baseURL + `/search?id=${encodeURIComponent(query)}`);
-    const songs = await res.json();
-    if (!songs || songs.length === 0) {
-      document.getElementById('results').innerHTML = '<p>No results found</p>';
-      return;
-    }
-    let html = '';
-    songs.forEach(song => {
-      html += `
-        <div class="song-card">
-          <img src="${song.thumbnail}" alt="${song.title}">
-          <div class="song-info">
-            <h3>${song.title}</h3>
-            <p>${song.artist || 'Unknown Artist'}</p>
-          </div>
-          <div class="actions">
-            <button onclick="playSong('${song.url}')">Play</button>
-            <a href="${song.url}" download>
-              <button>Download</button>
-            </a>
-          </div>
-        </div>
-      `;
-    });
-    document.getElementById('results').innerHTML = html;
+    const res = await fetch(searchAPI + encodeURIComponent(query));
+    const data = await res.json();
+    const songs = data.data.results;
+    displaySongs(songs, 'results');
   } catch (error) {
     document.getElementById('results').innerHTML = '<p>Error fetching songs</p>';
     console.error(error);
   }
 }
 
+function displaySongs(songs, containerId) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  songs.forEach(song => {
+    const title = song.name || "Unknown Title";
+    const artist = song.primaryArtists || "Unknown Artist";
+    const thumbnail = song.image?.[2]?.link || '';
+    const url = song.downloadUrl?.[4]?.link || '';
+    const lyricsId = song.id;
+
+    const card = document.createElement('div');
+    card.className = 'song-card';
+    card.innerHTML = `
+      <img src="${thumbnail}" alt="${title}">
+      <div class="song-info">
+        <h3>${title}</h3>
+        <p>${artist}</p>
+      </div>
+      <div class="actions">
+        <button onclick="playSong('${url}')">Play</button>
+        <button onclick="downloadSong('${url}')">Download</button>
+        <button onclick="fetchLyrics('${lyricsId}')">Lyrics</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
 function playSong(url) {
-  const audioPlayer = document.getElementById('audioPlayer');
   audioPlayer.src = url;
   audioPlayer.play();
 }
+
+function downloadSong(url) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'song.mp3';
+  link.click();
+}
+
+async function fetchLyrics(songId) {
+  lyricsBox.style.display = 'block';
+  lyricsBox.innerHTML = '<p>Loading lyrics...</p>';
+  try {
+    const res = await fetch(`https://saavn.me/lyrics?id=${songId}`);
+    const data = await res.json();
+    if (data.success && data.data.lyrics) {
+      lyricsBox.innerHTML = `<h3>Lyrics:</h3><p>${data.data.lyrics.replace(/\n/g, '<br>')}</p>`;
+    } else {
+      lyricsBox.innerHTML = '<p>No lyrics available</p>';
+    }
+  } catch (error) {
+    lyricsBox.innerHTML = '<p>Error fetching lyrics</p>';
+    console.error(error);
+  }
+}
+
+// Load trending on page load
+loadTrending();
 </script>
 </body>
 </html>
