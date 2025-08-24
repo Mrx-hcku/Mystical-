@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MusicMe</title>
+<title>Music Search App</title>
 <style>
     body {
         margin: 0;
@@ -12,177 +12,138 @@
         color: #fff;
         display: flex;
         flex-direction: column;
-        min-height: 100vh;
+        align-items: center;
+        padding: 20px;
     }
-    header {
-        padding: 15px;
-        background: #1db954;
-        text-align: center;
-        font-size: 22px;
-        font-weight: bold;
+    h1 {
+        color: #1db954;
     }
-    .search-container {
+    .search-box {
         display: flex;
-        justify-content: center;
-        padding: 15px;
-        background: #181818;
+        width: 100%;
+        max-width: 500px;
+        margin-bottom: 20px;
     }
-    .search-container input {
+    .search-box input {
         flex: 1;
         padding: 10px;
-        font-size: 16px;
+        font-size: 18px;
         border: none;
-        outline: none;
         border-radius: 5px 0 0 5px;
     }
-    .search-container button {
+    .search-box button {
         padding: 10px 20px;
+        font-size: 18px;
         border: none;
         background: #1db954;
         color: #fff;
-        font-size: 16px;
-        border-radius: 0 5px 5px 0;
         cursor: pointer;
+        border-radius: 0 5px 5px 0;
     }
     .results {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         gap: 15px;
-        padding: 15px;
+        width: 100%;
+        max-width: 1000px;
     }
     .card {
-        background: #181818;
+        background: #1e1e1e;
         border-radius: 8px;
-        overflow: hidden;
+        padding: 10px;
         text-align: center;
-        cursor: pointer;
-        transition: transform 0.2s;
-    }
-    .card:hover {
-        transform: scale(1.05);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
     }
     .card img {
         width: 100%;
-        height: 140px;
-        object-fit: cover;
-    }
-    .card p {
-        padding: 10px;
-        font-size: 14px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    /* Bottom Player */
-    .player {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: #282828;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 15px;
-        border-top: 1px solid #333;
-    }
-    .player img {
-        width: 50px;
-        height: 50px;
+        height: 120px;
         object-fit: cover;
         border-radius: 5px;
     }
-    .player-info {
-        flex: 1;
-        margin-left: 10px;
-    }
-    .player-info h4 {
-        margin: 0;
-        font-size: 16px;
-    }
-    .player-info p {
-        margin: 0;
-        font-size: 12px;
-        color: #aaa;
-    }
-    .controls button {
-        background: none;
+    .card button {
+        margin-top: 10px;
+        padding: 8px 12px;
+        background: #1db954;
         border: none;
-        color: #fff;
-        font-size: 24px;
+        color: white;
         cursor: pointer;
+        border-radius: 5px;
+    }
+    .player {
+        width: 100%;
+        max-width: 800px;
+        margin-top: 20px;
+        background: #000;
+        display: none;
+    }
+    iframe {
+        width: 100%;
+        height: 400px;
+        border: none;
     }
 </style>
 </head>
 <body>
-<header>Music Stream Demo</header>
-<div class="search-container">
-    <input type="text" id="searchBox" placeholder="Search songs...">
-    <button onclick="searchSongs()">Search</button>
-</div>
-<div class="results" id="results"></div>
-
-<!-- Player -->
-<div class="player" id="player" style="display: none;">
-    <img id="playerImg" src="" alt="Song">
-    <div class="player-info">
-        <h4 id="playerTitle">Title</h4>
-        <p id="playerArtist">Artist</p>
+    <h1>🎵 Music Search</h1>
+    <div class="search-box">
+        <input type="text" id="query" placeholder="Search for songs...">
+        <button onclick="searchMusic()">Search</button>
     </div>
-    <div class="controls">
-        <button onclick="togglePlay()">⏯</button>
+    <div class="results" id="results"></div>
+    <div class="player" id="player">
+        <iframe id="musicFrame" allowfullscreen></iframe>
     </div>
-    <audio id="audioPlayer" controls style="display:none;"></audio>
-</div>
 
 <script>
-async function searchSongs() {
-    const query = document.getElementById('searchBox').value.trim();
-    if (!query) return alert('Please enter a search term');
-    const url = `https://pagalworldapi.com/api/search?query=${encodeURIComponent(query)}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    displayResults(data.results);
-}
+async function searchMusic() {
+    const query = document.getElementById("query").value.trim();
+    if (!query) return alert("Please enter a search term!");
 
-function displayResults(songs) {
-    const container = document.getElementById('results');
-    container.innerHTML = '';
-    if (!songs || songs.length === 0) {
-        container.innerHTML = '<p>No results found</p>';
-        return;
+    document.getElementById("results").innerHTML = "<p>Loading...</p>";
+
+    try {
+        const res = await fetch(`https://proxyserver-bd9x.onrender.com/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+
+        if (!data.results || data.results.length === 0) {
+            document.getElementById("results").innerHTML = "<p>No results found!</p>";
+            return;
+        }
+
+        document.getElementById("results").innerHTML = "";
+        data.results.forEach(item => {
+            const card = document.createElement("div");
+            card.className = "card";
+
+            const img = document.createElement("img");
+            img.src = item.image || "https://via.placeholder.com/200x120";
+            card.appendChild(img);
+
+            const title = document.createElement("p");
+            title.textContent = item.title;
+            card.appendChild(title);
+
+            const btn = document.createElement("button");
+            btn.textContent = "Play";
+            btn.onclick = () => playMusic(item.downloadUrl);
+            card.appendChild(btn);
+
+            document.getElementById("results").appendChild(card);
+        });
+
+    } catch (error) {
+        console.error(error);
+        document.getElementById("results").innerHTML = "<p>Error loading data!</p>";
     }
-    songs.forEach(song => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-            <img src="${song.image}" alt="${song.title}">
-            <p>${song.title}</p>
-        `;
-        card.onclick = () => playSong(song);
-        container.appendChild(card);
-    });
 }
 
-function playSong(song) {
-    const player = document.getElementById('player');
-    const audio = document.getElementById('audioPlayer');
-    document.getElementById('playerImg').src = song.image;
-    document.getElementById('playerTitle').innerText = song.title;
-    document.getElementById('playerArtist').innerText = song.artist || 'Unknown';
-    audio.src = song.downloadUrl; // Adjust based on API
-    audio.play();
-    player.style.display = 'flex';
-}
-
-function togglePlay() {
-    const audio = document.getElementById('audioPlayer');
-    if (audio.paused) {
-        audio.play();
-    } else {
-        audio.pause();
-    }
+function playMusic(url) {
+    const player = document.getElementById("player");
+    const frame = document.getElementById("musicFrame");
+    frame.src = url;
+    player.style.display = "block";
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 }
 </script>
 </body>
-  </html>
+    </html>
