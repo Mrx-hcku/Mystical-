@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pagalworld Music Search</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #121212;
+    color: #fff;
+    text-align: center;
+  }
+  h1 {
+    font-size: 24px;
+    margin: 20px 0;
+  }
+  .search-box {
+    display: flex;
+    justify-content: center;
+    margin: 10px;
+    gap: 10px;
+  }
+  .search-box input {
+    padding: 12px;
+    width: 65%;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+  }
+  .search-box button {
+    padding: 12px 18px;
+    background: #ff4757;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .results {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+    padding: 10px;
+  }
+  .song-card {
+    background: #1e1e1e;
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+  .song-card img {
+    width: 70px;
+    height: 70px;
+    border-radius: 10px;
+    object-fit: cover;
+  }
+  .song-info {
+    flex: 1;
+    text-align: left;
+  }
+  .song-info h3 {
+    margin: 0;
+    font-size: 18px;
+  }
+  .song-info p {
+    margin: 5px 0 0;
+    font-size: 14px;
+    color: #ccc;
+  }
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .actions button {
+    padding: 8px 10px;
+    background: #ff4757;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  audio {
+    width: 90%;
+    margin-top: 15px;
+    outline: none;
+  }
+</style>
+</head>
+<body>
+  <h1>Pagalworld Music Search</h1>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search for songs...">
+    <button onclick="searchSongs()">Search</button>
+  </div>
+  <div id="results" class="results"></div>
+  <audio id="audioPlayer" controls></audio>
+
+<script>
+const proxy = "https://cors-anywhere.herokuapp.com/";
+const baseURL = "https://pagal-music-api.vercel.app";
+
+async function searchSongs() {
+  const query = document.getElementById('searchInput').value.trim();
+  if (!query) {
+    alert('Please enter a song name');
+    return;
+  }
+  document.getElementById('results').innerHTML = '<p>Loading...</p>';
+  try {
+    const res = await fetch(proxy + baseURL + `/search?id=${encodeURIComponent(query)}`);
+    const songs = await res.json();
+    if (!songs || songs.length === 0) {
+      document.getElementById('results').innerHTML = '<p>No results found</p>';
+      return;
+    }
+    let html = '';
+    songs.forEach(song => {
+      html += `
+        <div class="song-card">
+          <img src="${song.thumbnail}" alt="${song.title}">
+          <div class="song-info">
+            <h3>${song.title}</h3>
+            <p>${song.artist || 'Unknown Artist'}</p>
+          </div>
+          <div class="actions">
+            <button onclick="playSong('${song.url}')">Play</button>
+            <a href="${song.url}" download>
+              <button>Download</button>
+            </a>
+          </div>
+        </div>
+      `;
+    });
+    document.getElementById('results').innerHTML = html;
+  } catch (error) {
+    document.getElementById('results').innerHTML = '<p>Error fetching songs</p>';
+    console.error(error);
+  }
+}
+
+function playSong(url) {
+  const audioPlayer = document.getElementById('audioPlayer');
+  audioPlayer.src = url;
+  audioPlayer.play();
+}
+</script>
+</body>
+</html>
